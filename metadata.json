@@ -1,0 +1,7 @@
+{
+  "name": "Window Width",
+  "description": "Control window width",
+  "uuid": "window-width@adaspt",
+  "settings-schema": "org.gnome.shell.extensions.window-width",
+  "shell-version": ["50"]
+}

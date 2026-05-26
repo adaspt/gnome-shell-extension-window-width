@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.window-width"
+          path="/org/gnome/shell/extensions/window-width/">
+    <key name="increase-window-width" type="as">
+      <default>["&lt;Super&gt;equal"]</default>
+      <summary>Increase focused window width</summary>
+      <description>
+        Keyboard shortcut to increase the focused window width to the next
+        10 percent increment of the current monitor work area.
+      </description>
+    </key>
+    <key name="decrease-window-width" type="as">
+      <default>["&lt;Super&gt;minus"]</default>
+      <summary>Decrease focused window width</summary>
+      <description>
+        Keyboard shortcut to decrease the focused window width to the previous
+        10 percent increment of the current monitor work area.
+      </description>
+    </key>
+  </schema>
+</schemalist>
