@@ -67,7 +67,8 @@ export default class WindowWidthExtension extends Extension {
     const frame = window.get_frame_rect();
     const workArea = window.get_work_area_current_monitor();
     const tileSide = this._getTileSide(frame, workArea);
-    if (!this._canResizeWindow(window, tileSide)) return;
+    const isMaximized = window.is_maximized();
+    if (!this._canResizeWindow(window, tileSide, isMaximized, direction)) return;
 
     const step = Math.round(workArea.width * WIDTH_INCREMENT);
     if (step <= 0) return;
@@ -78,7 +79,9 @@ export default class WindowWidthExtension extends Extension {
     const anchor = this._getAnchor(frame, workArea, tileSide);
     const targetX = this._getTargetX(frame, workArea, targetWidth, anchor);
 
-    if (tileSide) window.unmaximize();
+    if (tileSide || isMaximized) {
+      window.unmaximize();
+    }
 
     window.move_resize_frame(true, targetX, frame.y, targetWidth, frame.height);
   }
@@ -90,9 +93,11 @@ export default class WindowWidthExtension extends Extension {
     return true;
   }
 
-  _canResizeWindow(window, tileSide) {
+  _canResizeWindow(window, tileSide, isMaximized, direction) {
     if (window.is_fullscreen()) return false;
-    if (window.is_maximized() && !tileSide) return false;
+    if (isMaximized && !tileSide && direction !== ResizeDirection.DECREASE)
+      return false;
+    if (isMaximized || tileSide) return true;
     if (!window.allows_resize() || !window.allows_move()) return false;
 
     return true;
