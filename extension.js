@@ -24,7 +24,7 @@ import * as Main from "resource:///org/gnome/shell/ui/main.js";
 const INCREASE_KEYBINDING = "increase-window-width";
 const DECREASE_KEYBINDING = "decrease-window-width";
 const WIDTH_INCREMENT = 0.1;
-const EDGE_TOLERANCE = 1;
+const EDGE_TOLERANCE = 8;
 
 const ResizeDirection = {
   INCREASE: 1,
@@ -125,9 +125,11 @@ export default class WindowWidthExtension extends Extension {
   }
 
   _getTileSide(frame, workArea) {
+    const frameBottom = frame.y + frame.height;
+    const workAreaBottom = workArea.y + workArea.height;
     const fillsHeight =
       Math.abs(frame.y - workArea.y) <= EDGE_TOLERANCE &&
-      Math.abs(frame.height - workArea.height) <= EDGE_TOLERANCE;
+      Math.abs(frameBottom - workAreaBottom) <= EDGE_TOLERANCE;
     const isNarrowerThanWorkArea = frame.width < workArea.width - EDGE_TOLERANCE;
 
     if (!fillsHeight || !isNarrowerThanWorkArea) return null;
