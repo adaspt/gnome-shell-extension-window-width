@@ -23,13 +23,42 @@ import * as Main from "resource:///org/gnome/shell/ui/main.js";
 
 const INCREASE_KEYBINDING = "increase-window-width";
 const DECREASE_KEYBINDING = "decrease-window-width";
-const WIDTH_INCREMENT = 0.1;
-const EDGE_TOLERANCE = 8;
+const WIDTH_STEPS = 10;
+// Pixels by which a window may miss a step and still count as being on it,
+// e.g. when size increments keep it from reaching the exact width.
+const SNAP_TOLERANCE = 8;
 
 const ResizeDirection = {
   INCREASE: 1,
   DECREASE: -1,
 };
+
+function clamp(value, min, max) {
+  return Math.min(Math.max(value, min), max);
+}
+
+function getTargetWidth(currentWidth, workAreaWidth, direction) {
+  const step = workAreaWidth / WIDTH_STEPS;
+  const targetSteps =
+    direction === ResizeDirection.INCREASE
+      ? Math.floor((currentWidth + SNAP_TOLERANCE) / step) + 1
+      : Math.ceil((currentWidth - SNAP_TOLERANCE) / step) - 1;
+
+  return Math.round(clamp(targetSteps, 1, WIDTH_STEPS) * step);
+}
+
+// Keeps the edge nearest to the work area border in place.
+function getTargetX(frame, workArea, targetWidth) {
+  const frameRight = frame.x + frame.width;
+  const workAreaRight = workArea.x + workArea.width;
+  const anchorRight = workAreaRight - frameRight < frame.x - workArea.x;
+
+  return clamp(
+    anchorRight ? frameRight - targetWidth : frame.x,
+    workArea.x,
+    workAreaRight - targetWidth,
+  );
+}
 
 export default class WindowWidthExtension extends Extension {
   enable() {
@@ -62,98 +91,21 @@ export default class WindowWidthExtension extends Extension {
 
   _resizeFocusedWindow(direction) {
     const window = global.display.focus_window;
-    if (!this._isNormalWindow(window)) return;
+    if (window?.get_window_type() !== Meta.WindowType.NORMAL) return;
+    // Unlike allows_resize(), resizeable stays true while maximized.
+    if (!window.resizeable || !window.allows_move()) return;
 
     const frame = window.get_frame_rect();
     const workArea = window.get_work_area_current_monitor();
-    const tileSide = this._getTileSide(frame, workArea);
-    const isMaximized = window.is_maximized();
-    if (!this._canResizeWindow(window, tileSide, isMaximized, direction)) return;
 
-    const step = Math.round(workArea.width * WIDTH_INCREMENT);
-    if (step <= 0) return;
-
-    const targetWidth = this._getTargetWidth(frame.width, workArea.width, step, direction);
+    const targetWidth = getTargetWidth(frame.width, workArea.width, direction);
     if (targetWidth === frame.width) return;
 
-    const anchor = this._getAnchor(frame, workArea, tileSide);
-    const targetX = this._getTargetX(frame, workArea, targetWidth, anchor);
+    const targetX = getTargetX(frame, workArea, targetWidth);
 
-    if (tileSide || isMaximized) {
-      window.unmaximize();
-    }
+    // Tiled windows are vertically maximized, so this untiles them too.
+    if (window.get_maximize_flags() !== 0) window.unmaximize();
 
     window.move_resize_frame(true, targetX, frame.y, targetWidth, frame.height);
-  }
-
-  _isNormalWindow(window) {
-    if (!window) return false;
-    if (window.get_window_type() !== Meta.WindowType.NORMAL) return false;
-
-    return true;
-  }
-
-  _canResizeWindow(window, tileSide, isMaximized, direction) {
-    if (window.is_fullscreen()) return false;
-    if (isMaximized && !tileSide && direction !== ResizeDirection.DECREASE)
-      return false;
-    if (isMaximized || tileSide) return true;
-    if (!window.allows_resize() || !window.allows_move()) return false;
-
-    return true;
-  }
-
-  _getTargetWidth(currentWidth, workAreaWidth, step, direction) {
-    const minWidth = step;
-    const maxWidth = workAreaWidth;
-    const currentSteps = currentWidth / step;
-    const targetSteps =
-      direction === ResizeDirection.INCREASE
-        ? Math.floor(currentSteps) + 1
-        : Math.ceil(currentSteps) - 1;
-
-    return this._clamp(targetSteps * step, minWidth, maxWidth);
-  }
-
-  _getAnchor(frame, workArea, tileSide) {
-    if (tileSide) return tileSide;
-
-    const leftDistance = frame.x - workArea.x;
-    const rightDistance = workArea.x + workArea.width - (frame.x + frame.width);
-
-    return rightDistance < leftDistance ? "right" : "left";
-  }
-
-  _getTileSide(frame, workArea) {
-    const frameBottom = frame.y + frame.height;
-    const workAreaBottom = workArea.y + workArea.height;
-    const fillsHeight =
-      Math.abs(frame.y - workArea.y) <= EDGE_TOLERANCE &&
-      Math.abs(frameBottom - workAreaBottom) <= EDGE_TOLERANCE;
-    const isNarrowerThanWorkArea = frame.width < workArea.width - EDGE_TOLERANCE;
-
-    if (!fillsHeight || !isNarrowerThanWorkArea) return null;
-
-    if (Math.abs(frame.x - workArea.x) <= EDGE_TOLERANCE) return "left";
-
-    const frameRight = frame.x + frame.width;
-    const workAreaRight = workArea.x + workArea.width;
-    if (Math.abs(frameRight - workAreaRight) <= EDGE_TOLERANCE) return "right";
-
-    return null;
-  }
-
-  _getTargetX(frame, workArea, targetWidth, anchor) {
-    const workAreaRight = workArea.x + workArea.width;
-    let targetX = anchor === "right" ? frame.x + frame.width - targetWidth : frame.x;
-
-    if (targetX < workArea.x) targetX = workArea.x;
-    if (targetX + targetWidth > workAreaRight) targetX = workAreaRight - targetWidth;
-
-    return targetX;
-  }
-
-  _clamp(value, min, max) {
-    return Math.min(Math.max(value, min), max);
   }
 }
