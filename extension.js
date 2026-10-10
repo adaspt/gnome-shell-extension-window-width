@@ -24,7 +24,9 @@ import * as Main from "resource:///org/gnome/shell/ui/main.js";
 const INCREASE_KEYBINDING = "increase-window-width";
 const DECREASE_KEYBINDING = "decrease-window-width";
 const FILL_KEYBINDING = "fill-work-area";
+const THREE_QUARTER_KEYBINDING = "three-quarter-width";
 const WIDTH_STEPS = 10;
+const THREE_QUARTER_WIDTH = 0.75;
 // Pixels by which a window may miss a step and still count as being on it,
 // e.g. when size increments keep it from reaching the exact width.
 const SNAP_TOLERANCE = 8;
@@ -61,6 +63,16 @@ function getTargetX(frame, workArea, targetWidth) {
   );
 }
 
+// Right edge first; a window already sitting there goes to the left edge.
+function getThreeQuarterX(frame, workArea, targetWidth) {
+  const workAreaRight = workArea.x + workArea.width;
+  const isAtRight =
+    Math.abs(frame.width - targetWidth) <= SNAP_TOLERANCE &&
+    Math.abs(frame.x + frame.width - workAreaRight) <= SNAP_TOLERANCE;
+
+  return isAtRight ? workArea.x : workAreaRight - targetWidth;
+}
+
 export default class WindowWidthExtension extends Extension {
   enable() {
     this._settings = this.getSettings();
@@ -72,12 +84,16 @@ export default class WindowWidthExtension extends Extension {
       this._resizeFocusedWindow(ResizeDirection.DECREASE),
     );
     this._addKeybinding(FILL_KEYBINDING, () => this._fillWorkArea());
+    this._addKeybinding(THREE_QUARTER_KEYBINDING, () =>
+      this._placeThreeQuarterWidth(),
+    );
   }
 
   disable() {
     Main.wm.removeKeybinding(INCREASE_KEYBINDING);
     Main.wm.removeKeybinding(DECREASE_KEYBINDING);
     Main.wm.removeKeybinding(FILL_KEYBINDING);
+    Main.wm.removeKeybinding(THREE_QUARTER_KEYBINDING);
 
     this._settings = null;
   }
@@ -114,6 +130,25 @@ export default class WindowWidthExtension extends Extension {
     const { x, y, width, height } = window.get_work_area_current_monitor();
 
     this._moveResizeWindow(window, x, y, width, height);
+  }
+
+  _placeThreeQuarterWidth() {
+    const window = this._getResizableFocusedWindow();
+    if (!window) return;
+
+    const frame = window.get_frame_rect();
+    const workArea = window.get_work_area_current_monitor();
+
+    const targetWidth = Math.round(workArea.width * THREE_QUARTER_WIDTH);
+    const targetX = getThreeQuarterX(frame, workArea, targetWidth);
+
+    this._moveResizeWindow(
+      window,
+      targetX,
+      workArea.y,
+      targetWidth,
+      workArea.height,
+    );
   }
 
   _getResizableFocusedWindow() {

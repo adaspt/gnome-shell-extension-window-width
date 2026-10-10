@@ -26,5 +26,14 @@
         work area of the current monitor without maximizing it.
       </description>
     </key>
+    <key name="three-quarter-width" type="as">
+      <default>["&lt;Super&gt;r"]</default>
+      <summary>Place the focused window at 75 percent width</summary>
+      <description>
+        Keyboard shortcut to resize the focused window to 75 percent of the
+        current monitor work area width and its full height, and move it to
+        the right edge, or to the left edge if it is already at the right one.
+      </description>
+    </key>
   </schema>
 </schemalist>

@@ -6,11 +6,12 @@ Personal extension, used only by me and not published to extensions.gnome.org. T
 
 ## Shortcuts
 
-| Shortcut    | Action                                                      |
-| ----------- | ----------------------------------------------------------- |
-| `Super`+`=` | Widen the window to the next 10% step of the work area      |
-| `Super`+`-` | Narrow the window to the previous 10% step of the work area |
-| `Super`+`F` | Fill the whole work area without maximizing the window      |
+| Shortcut    | Action                                                                         |
+| ----------- | ------------------------------------------------------------------------------ |
+| `Super`+`=` | Widen the window to the next 10% step of the work area                         |
+| `Super`+`-` | Narrow the window to the previous 10% step of the work area                    |
+| `Super`+`F` | Fill the whole work area without maximizing the window                         |
+| `Super`+`R` | Set 75% width and full height at the right edge; press again for the left edge |
 
 ## Install
 
