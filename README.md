@@ -1,8 +1,16 @@
 # Window Width
 
-GNOME Shell extension that resizes the focused window in 10% steps of the work area width: `Super`+`=` to widen, `Super`+`-` to narrow.
+GNOME Shell extension with keyboard shortcuts for sizing the focused window.
 
 Personal extension, used only by me and not published to extensions.gnome.org. There is no preferences UI; shortcuts are defined in the schema.
+
+## Shortcuts
+
+| Shortcut    | Action                                                      |
+| ----------- | ----------------------------------------------------------- |
+| `Super`+`=` | Widen the window to the next 10% step of the work area      |
+| `Super`+`-` | Narrow the window to the previous 10% step of the work area |
+| `Super`+`F` | Fill the whole work area without maximizing the window      |
 
 ## Install
 

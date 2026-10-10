@@ -23,6 +23,7 @@ import * as Main from "resource:///org/gnome/shell/ui/main.js";
 
 const INCREASE_KEYBINDING = "increase-window-width";
 const DECREASE_KEYBINDING = "decrease-window-width";
+const FILL_KEYBINDING = "fill-work-area";
 const WIDTH_STEPS = 10;
 // Pixels by which a window may miss a step and still count as being on it,
 // e.g. when size increments keep it from reaching the exact width.
@@ -70,11 +71,13 @@ export default class WindowWidthExtension extends Extension {
     this._addKeybinding(DECREASE_KEYBINDING, () =>
       this._resizeFocusedWindow(ResizeDirection.DECREASE),
     );
+    this._addKeybinding(FILL_KEYBINDING, () => this._fillWorkArea());
   }
 
   disable() {
     Main.wm.removeKeybinding(INCREASE_KEYBINDING);
     Main.wm.removeKeybinding(DECREASE_KEYBINDING);
+    Main.wm.removeKeybinding(FILL_KEYBINDING);
 
     this._settings = null;
   }
@@ -90,10 +93,8 @@ export default class WindowWidthExtension extends Extension {
   }
 
   _resizeFocusedWindow(direction) {
-    const window = global.display.focus_window;
-    if (window?.get_window_type() !== Meta.WindowType.NORMAL) return;
-    // Unlike allows_resize(), resizeable stays true while maximized.
-    if (!window.resizeable || !window.allows_move()) return;
+    const window = this._getResizableFocusedWindow();
+    if (!window) return;
 
     const frame = window.get_frame_rect();
     const workArea = window.get_work_area_current_monitor();
@@ -103,9 +104,31 @@ export default class WindowWidthExtension extends Extension {
 
     const targetX = getTargetX(frame, workArea, targetWidth);
 
+    this._moveResizeWindow(window, targetX, frame.y, targetWidth, frame.height);
+  }
+
+  _fillWorkArea() {
+    const window = this._getResizableFocusedWindow();
+    if (!window) return;
+
+    const { x, y, width, height } = window.get_work_area_current_monitor();
+
+    this._moveResizeWindow(window, x, y, width, height);
+  }
+
+  _getResizableFocusedWindow() {
+    const window = global.display.focus_window;
+    if (window?.get_window_type() !== Meta.WindowType.NORMAL) return null;
+    // Unlike allows_resize(), resizeable stays true while maximized.
+    if (!window.resizeable || !window.allows_move()) return null;
+
+    return window;
+  }
+
+  _moveResizeWindow(window, x, y, width, height) {
     // Tiled windows are vertically maximized, so this untiles them too.
     if (window.get_maximize_flags() !== 0) window.unmaximize();
 
-    window.move_resize_frame(true, targetX, frame.y, targetWidth, frame.height);
+    window.move_resize_frame(true, x, y, width, height);
   }
 }

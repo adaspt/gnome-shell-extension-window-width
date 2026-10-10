@@ -18,5 +18,13 @@
         10 percent increment of the current monitor work area.
       </description>
     </key>
+    <key name="fill-work-area" type="as">
+      <default>["&lt;Super&gt;f"]</default>
+      <summary>Fill the work area with the focused window</summary>
+      <description>
+        Keyboard shortcut to resize the focused window to cover the whole
+        work area of the current monitor without maximizing it.
+      </description>
+    </key>
   </schema>
 </schemalist>
