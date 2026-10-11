@@ -1,6 +1,6 @@
 # Window Width
 
-GNOME Shell extension with keyboard shortcuts for sizing the focused window and moving focus between windows.
+GNOME Shell extension with keyboard shortcuts for sizing the focused window and moving focus between windows. It also flashes a ring around a window when it gets focus.
 
 Personal extension, used only by me and not published to extensions.gnome.org. There is no preferences UI; shortcuts are defined in the schema.
 
@@ -15,7 +15,7 @@ Personal extension, used only by me and not published to extensions.gnome.org. T
 | `Super`+`Ctrl`+`Left` / `Right` | Focus the topmost window on the monitor to the left / right                    |
 | `Super`+`Ctrl`+`Down` / `Up`    | Focus the next / previous window on the current monitor                        |
 
-A monitor without windows gets the pointer at its center instead, so the next app launched opens there.
+Switching monitors also moves the pointer to the center of the target monitor, so the next app launched opens there.
 
 ## Install
 

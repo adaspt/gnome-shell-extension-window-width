@@ -40,8 +40,8 @@
       <summary>Focus the topmost window on the monitor to the left</summary>
       <description>
         Keyboard shortcut to focus the topmost window of the monitor to the
-        left of the current one. If that monitor has no windows, the pointer
-        moves to its center so that new windows open there.
+        left of the current one. The pointer moves to the center of that
+        monitor so that new windows open there.
       </description>
     </key>
     <key name="focus-monitor-right" type="as">
@@ -49,8 +49,8 @@
       <summary>Focus the topmost window on the monitor to the right</summary>
       <description>
         Keyboard shortcut to focus the topmost window of the monitor to the
-        right of the current one. If that monitor has no windows, the pointer
-        moves to its center so that new windows open there.
+        right of the current one. The pointer moves to the center of that
+        monitor so that new windows open there.
       </description>
     </key>
     <key name="focus-next-window" type="as">

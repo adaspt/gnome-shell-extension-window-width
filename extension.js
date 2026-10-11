@@ -15,8 +15,10 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
+import Clutter from "gi://Clutter";
 import Meta from "gi://Meta";
 import Shell from "gi://Shell";
+import St from "gi://St";
 
 import { Extension } from "resource:///org/gnome/shell/extensions/extension.js";
 import * as Main from "resource:///org/gnome/shell/ui/main.js";
@@ -34,6 +36,13 @@ const THREE_QUARTER_WIDTH = 0.75;
 // Pixels by which a window may miss a step and still count as being on it,
 // e.g. when size increments keep it from reaching the exact width.
 const SNAP_TOLERANCE = 8;
+const FOCUS_RING_STYLE_CLASS = "window-width-focus-ring";
+const FOCUS_RING_FADE_DURATION = 2000;
+const FOCUS_RING_WINDOW_TYPES = [
+  Meta.WindowType.NORMAL,
+  Meta.WindowType.DIALOG,
+  Meta.WindowType.MODAL_DIALOG,
+];
 
 const ResizeDirection = {
   INCREASE: 1,
@@ -108,6 +117,12 @@ export default class WindowWidthExtension extends Extension {
     this._addKeybinding(FOCUS_PREVIOUS_WINDOW_KEYBINDING, () =>
       this._cycleMonitorWindows(CycleDirection.PREVIOUS),
     );
+
+    this._focusRing = null;
+    this._focusWindowChangedId = global.display.connect(
+      "notify::focus-window",
+      () => this._flashFocusRing(),
+    );
   }
 
   disable() {
@@ -119,6 +134,10 @@ export default class WindowWidthExtension extends Extension {
     Main.wm.removeKeybinding(FOCUS_MONITOR_RIGHT_KEYBINDING);
     Main.wm.removeKeybinding(FOCUS_NEXT_WINDOW_KEYBINDING);
     Main.wm.removeKeybinding(FOCUS_PREVIOUS_WINDOW_KEYBINDING);
+
+    global.display.disconnect(this._focusWindowChangedId);
+    this._focusWindowChangedId = null;
+    this._removeFocusRing();
 
     this._settings = null;
   }
@@ -183,9 +202,12 @@ export default class WindowWidthExtension extends Extension {
     );
     if (monitor < 0) return;
 
+    this._movePointerToMonitor(monitor);
+
     const windows = this._getMonitorWindows(monitor);
     if (windows.length === 0) {
-      this._focusEmptyMonitor(monitor);
+      // Without a focused window the pointer's monitor is the current one.
+      global.display.unset_input_focus(global.get_current_time());
       return;
     }
 
@@ -195,9 +217,8 @@ export default class WindowWidthExtension extends Extension {
     topmost.activate(global.get_current_time());
   }
 
-  // New windows open on the pointer's monitor, so the pointer moves there.
-  // Focus is dropped to make that monitor the current one for the shortcuts.
-  _focusEmptyMonitor(monitor) {
+  // New windows open on the pointer's monitor, so the pointer follows focus.
+  _movePointerToMonitor(monitor) {
     const geometry = global.display.get_monitor_geometry(monitor);
     const seat = global.stage.context.get_backend().get_default_seat();
 
@@ -205,7 +226,6 @@ export default class WindowWidthExtension extends Extension {
       Math.round(geometry.x + geometry.width / 2),
       Math.round(geometry.y + geometry.height / 2),
     );
-    global.display.unset_input_focus(global.get_current_time());
   }
 
   _cycleMonitorWindows(direction) {
@@ -245,6 +265,41 @@ export default class WindowWidthExtension extends Extension {
         (window) =>
           window.get_monitor() === monitor && window.showing_on_its_workspace(),
       );
+  }
+
+  // Marks the newly focused window with a ring that fades out.
+  _flashFocusRing() {
+    this._removeFocusRing();
+
+    const window = global.display.focus_window;
+    if (!FOCUS_RING_WINDOW_TYPES.includes(window?.get_window_type())) return;
+
+    const frame = window.get_frame_rect();
+    const focusRing = new St.Widget({
+      style_class: FOCUS_RING_STYLE_CLASS,
+      x: frame.x,
+      y: frame.y,
+      width: frame.width,
+      height: frame.height,
+    });
+    this._focusRing = focusRing;
+
+    Main.uiGroup.add_child(focusRing);
+    focusRing.ease({
+      opacity: 0,
+      duration: FOCUS_RING_FADE_DURATION,
+      mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+      onComplete: () => {
+        if (this._focusRing === focusRing) this._focusRing = null;
+
+        focusRing.destroy();
+      },
+    });
+  }
+
+  _removeFocusRing() {
+    this._focusRing?.destroy();
+    this._focusRing = null;
   }
 
   _getResizableFocusedWindow() {

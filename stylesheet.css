@@ -1,1 +1,5 @@
-/* Add your custom extension styling here */
+.window-width-focus-ring {
+  border: 4px solid #3584e4;
+  border-color: -st-accent-color;
+  border-radius: 16px;
+}
