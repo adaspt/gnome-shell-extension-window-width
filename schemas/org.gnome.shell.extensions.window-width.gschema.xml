@@ -35,5 +35,39 @@
         the right edge, or to the left edge if it is already at the right one.
       </description>
     </key>
+    <key name="focus-monitor-left" type="as">
+      <default>["&lt;Super&gt;&lt;Control&gt;Left"]</default>
+      <summary>Focus the topmost window on the monitor to the left</summary>
+      <description>
+        Keyboard shortcut to focus the topmost window of the monitor to the
+        left of the current one. If that monitor has no windows, the pointer
+        moves to its center so that new windows open there.
+      </description>
+    </key>
+    <key name="focus-monitor-right" type="as">
+      <default>["&lt;Super&gt;&lt;Control&gt;Right"]</default>
+      <summary>Focus the topmost window on the monitor to the right</summary>
+      <description>
+        Keyboard shortcut to focus the topmost window of the monitor to the
+        right of the current one. If that monitor has no windows, the pointer
+        moves to its center so that new windows open there.
+      </description>
+    </key>
+    <key name="focus-next-window" type="as">
+      <default>["&lt;Super&gt;&lt;Control&gt;Down"]</default>
+      <summary>Focus the next window on the current monitor</summary>
+      <description>
+        Keyboard shortcut to focus the next window on the current monitor,
+        cycling through its windows in the order they were opened.
+      </description>
+    </key>
+    <key name="focus-previous-window" type="as">
+      <default>["&lt;Super&gt;&lt;Control&gt;Up"]</default>
+      <summary>Focus the previous window on the current monitor</summary>
+      <description>
+        Keyboard shortcut to focus the previous window on the current monitor,
+        cycling through its windows in the order they were opened.
+      </description>
+    </key>
   </schema>
 </schemalist>

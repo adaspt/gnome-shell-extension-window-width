@@ -25,6 +25,10 @@ const INCREASE_KEYBINDING = "increase-window-width";
 const DECREASE_KEYBINDING = "decrease-window-width";
 const FILL_KEYBINDING = "fill-work-area";
 const THREE_QUARTER_KEYBINDING = "three-quarter-width";
+const FOCUS_MONITOR_LEFT_KEYBINDING = "focus-monitor-left";
+const FOCUS_MONITOR_RIGHT_KEYBINDING = "focus-monitor-right";
+const FOCUS_NEXT_WINDOW_KEYBINDING = "focus-next-window";
+const FOCUS_PREVIOUS_WINDOW_KEYBINDING = "focus-previous-window";
 const WIDTH_STEPS = 10;
 const THREE_QUARTER_WIDTH = 0.75;
 // Pixels by which a window may miss a step and still count as being on it,
@@ -34,6 +38,11 @@ const SNAP_TOLERANCE = 8;
 const ResizeDirection = {
   INCREASE: 1,
   DECREASE: -1,
+};
+
+const CycleDirection = {
+  NEXT: 1,
+  PREVIOUS: -1,
 };
 
 function clamp(value, min, max) {
@@ -87,6 +96,18 @@ export default class WindowWidthExtension extends Extension {
     this._addKeybinding(THREE_QUARTER_KEYBINDING, () =>
       this._placeThreeQuarterWidth(),
     );
+    this._addKeybinding(FOCUS_MONITOR_LEFT_KEYBINDING, () =>
+      this._focusNeighborMonitor(Meta.DisplayDirection.LEFT),
+    );
+    this._addKeybinding(FOCUS_MONITOR_RIGHT_KEYBINDING, () =>
+      this._focusNeighborMonitor(Meta.DisplayDirection.RIGHT),
+    );
+    this._addKeybinding(FOCUS_NEXT_WINDOW_KEYBINDING, () =>
+      this._cycleMonitorWindows(CycleDirection.NEXT),
+    );
+    this._addKeybinding(FOCUS_PREVIOUS_WINDOW_KEYBINDING, () =>
+      this._cycleMonitorWindows(CycleDirection.PREVIOUS),
+    );
   }
 
   disable() {
@@ -94,6 +115,10 @@ export default class WindowWidthExtension extends Extension {
     Main.wm.removeKeybinding(DECREASE_KEYBINDING);
     Main.wm.removeKeybinding(FILL_KEYBINDING);
     Main.wm.removeKeybinding(THREE_QUARTER_KEYBINDING);
+    Main.wm.removeKeybinding(FOCUS_MONITOR_LEFT_KEYBINDING);
+    Main.wm.removeKeybinding(FOCUS_MONITOR_RIGHT_KEYBINDING);
+    Main.wm.removeKeybinding(FOCUS_NEXT_WINDOW_KEYBINDING);
+    Main.wm.removeKeybinding(FOCUS_PREVIOUS_WINDOW_KEYBINDING);
 
     this._settings = null;
   }
@@ -149,6 +174,77 @@ export default class WindowWidthExtension extends Extension {
       targetWidth,
       workArea.height,
     );
+  }
+
+  _focusNeighborMonitor(direction) {
+    const monitor = global.display.get_monitor_neighbor_index(
+      this._getCurrentMonitor(),
+      direction,
+    );
+    if (monitor < 0) return;
+
+    const windows = this._getMonitorWindows(monitor);
+    if (windows.length === 0) {
+      this._focusEmptyMonitor(monitor);
+      return;
+    }
+
+    // Sorted from the lowest to the topmost.
+    const topmost = global.display.sort_windows_by_stacking(windows).at(-1);
+
+    topmost.activate(global.get_current_time());
+  }
+
+  // New windows open on the pointer's monitor, so the pointer moves there.
+  // Focus is dropped to make that monitor the current one for the shortcuts.
+  _focusEmptyMonitor(monitor) {
+    const geometry = global.display.get_monitor_geometry(monitor);
+    const seat = global.stage.context.get_backend().get_default_seat();
+
+    seat.warp_pointer(
+      Math.round(geometry.x + geometry.width / 2),
+      Math.round(geometry.y + geometry.height / 2),
+    );
+    global.display.unset_input_focus(global.get_current_time());
+  }
+
+  _cycleMonitorWindows(direction) {
+    // Activating a window changes both stacking and MRU order, so the cycle
+    // follows the order in which the windows were created instead.
+    const windows = this._getMonitorWindows(this._getCurrentMonitor()).sort(
+      (a, b) => a.get_stable_sequence() - b.get_stable_sequence(),
+    );
+    if (windows.length === 0) return;
+
+    const index = windows.indexOf(global.display.focus_window);
+    // Nothing in the cycle is focused: start from its first or last window.
+    const targetIndex =
+      index < 0 && direction === CycleDirection.PREVIOUS
+        ? windows.length - 1
+        : (index + direction + windows.length) % windows.length;
+    if (targetIndex === index) return;
+
+    windows[targetIndex].activate(global.get_current_time());
+  }
+
+  // The focused window's monitor, or the pointer's one if nothing is focused.
+  _getCurrentMonitor() {
+    return (
+      global.display.focus_window?.get_monitor() ??
+      global.display.get_current_monitor()
+    );
+  }
+
+  // Switchable windows visible on the monitor in the active workspace.
+  _getMonitorWindows(monitor) {
+    const workspace = global.workspace_manager.get_active_workspace();
+
+    return global.display
+      .get_tab_list(Meta.TabList.NORMAL, workspace)
+      .filter(
+        (window) =>
+          window.get_monitor() === monitor && window.showing_on_its_workspace(),
+      );
   }
 
   _getResizableFocusedWindow() {
